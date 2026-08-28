@@ -162,3 +162,35 @@ st.download_button(
     file_name="historial_chat.txt",
     mime="text/plain"
 )
+#estructura de la barra lateral izquierda que contiene los botones
+# --- SECCIÓN DE ACCIONES EN LA BARRA LATERAL ---
+with st.sidebar:
+    st.markdown("---") # Una línea divisoria visual elegante
+    st.markdown("### 🛠️ Acciones del Asistente")
+
+    # 1. BOTÓN PARA LIMPIAR HISTORIAL
+    if st.button("🗑️ Limpiar Historial", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+
+    # 2. BOTÓN PARA NUEVO PDF
+    if st.button("🔄 Cambiar / Subir Nuevo PDF", use_container_width=True):
+        st.session_state.vector_store = None
+        st.session_state.messages = []
+        st.rerun()
+
+    # 3. BOTÓN PARA DESCARGAR CONVERSACIÓN
+    # Primero preparamos el texto del historial para la descarga
+    historial_texto = ""
+    if "messages" in st.session_state:
+        for m in st.session_state.messages:
+            role_name = "Asistente" if m['role'] == 'assistant' else "Usuario"
+            historial_texto += f"{role_name}: {m['content']}\n\n"
+
+    st.download_button(
+        label="📥 Descargar Conversación",
+        data=historial_texto,
+        file_name="historial_chat.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
