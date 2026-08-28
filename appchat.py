@@ -18,7 +18,8 @@ else:
     GROQ_API_KEY = "api-jgc" 
 
 st.set_page_config(page_title="Asistente RAG", layout="wide")
-st.title("🦙 Asistente Virtual de JGC")
+st.title("🦙 Asistente Virtual de JGC" analiza y extrae informacion de un pdf.
+Usa RAG para evitar alucinaciones)
 
 if GROQ_API_KEY == "api-jgc":
     st.warning("⚠️ Usando clave de ejemplo. Si estás en la nube, asegúrate de configurar GROQ_API_KEY en Advanced Settings -> Secrets.")
@@ -26,7 +27,12 @@ if GROQ_API_KEY == "api-jgc":
 # Inicializar modelos activos en Groq
 llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.2, groq_api_key=GROQ_API_KEY)
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-
+# 1. BOTÓN PARA LIMPIAR HISTORIAL
+# inicio codigo nuevo 28 agosto
+    if st.button("🗑️ Limpiar Historial", use_container_width=True):
+        st.session_state.messages = []
+        st.rerun()
+        #finaliza codigo nuevo 28 agosto
 # Inicializar estados de sesión
 if "vector_store" not in st.session_state: st.session_state.vector_store = None
 if "chat_history" not in st.session_state: st.session_state.chat_history = []
@@ -170,9 +176,9 @@ with st.sidebar:
     st.markdown("### 🛠️ Acciones del Asistente")
 
     # 1. BOTÓN PARA LIMPIAR HISTORIAL
-    if st.button("🗑️ Limpiar Historial", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
+    #if st.button("🗑️ Limpiar Historial", use_container_width=True):
+        #st.session_state.messages = []
+        #st.rerun()
 
     # 2. BOTÓN PARA NUEVO PDF
     if st.button("🔄 Cambiar / Subir Nuevo PDF", use_container_width=True):
