@@ -139,4 +139,26 @@ if user_query:
     with st.chat_message("assistant"): 
         st.write(response_text)
     st.session_state.chat_history.append({"role": "assistant", "content": response_text})
+#boton para limpiar el historial
+if st.button("🗑️ Limpiar Historial"):
+    st.session_state.messages = []
+    st.rerun()
+    #boton para subir un nuevo pdf
+if st.button("🔄 Cambiar PDF / Nueva Base de Datos"):
+    st.session_state.vector_store = None
+    st.session_state.messages = []
+    st.rerun()
+    #boton para descargar el historial del chat
+# Convertimos el historial de la sesión a texto plano
+historial_texto = ""
+if "messages" in st.session_state:
+    for m in st.session_state.messages:
+        historial_texto += f"{m['role'].upper()}: {m['content']}\n\n"
 
+# Creamos el botón de descarga nativo de Streamlit
+st.download_button(
+    label="📥 Descargar Conversación",
+    data=historial_texto,
+    file_name="historial_chat.txt",
+    mime="text/plain"
+)
