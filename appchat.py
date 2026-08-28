@@ -27,7 +27,7 @@ llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.2, groq_api_key=GROQ_AP
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 # 1. BOTÓN PARA LIMPIAR HISTORIAL
 # inicio codigo nuevo 28 agosto
-    if st.button("🗑️ Limpiar Historial", use_container_width=True):
+if st.button("🗑️ Limpiar Historial", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
         #finaliza codigo nuevo 28 agosto
