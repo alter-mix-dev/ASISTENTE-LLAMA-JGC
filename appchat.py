@@ -18,8 +18,7 @@ else:
     GROQ_API_KEY = "api-jgc" 
 
 st.set_page_config(page_title="Asistente RAG", layout="wide")
-st.title("🦙 Asistente Virtual de JGC analiza y extrae informacion de un pdf. 
-Usa RAG para evitar alucinaciones)"
+st.title("🦙 Asistente Virtual de JGC analiza y extrae informacion de un pdf. Usa RAG para evitar alucinaciones)"
 
 if GROQ_API_KEY == "api-jgc":
     st.warning("⚠️ Usando clave de ejemplo. Si estás en la nube, asegúrate de configurar GROQ_API_KEY en Advanced Settings -> Secrets.")
