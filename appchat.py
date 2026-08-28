@@ -18,7 +18,7 @@ else:
     GROQ_API_KEY = "api-jgc" 
 
 st.set_page_config(page_title="Asistente RAG", layout="wide")
-st.title("🦙 Asistente Virtual de JGC. Analiza y extrae informacion de un pdf. Usa RAG para evitar alucinaciones")
+st.markdown("### 🦙 Asistente Virtual de JGC — Análisis RAG de PDF")
 
 if GROQ_API_KEY == "api-jgc":
     st.warning("⚠️ Usando clave de ejemplo. Si estás en la nube, asegúrate de configurar GROQ_API_KEY en Advanced Settings -> Secrets.")
@@ -80,13 +80,7 @@ with st.sidebar:
         st.session_state.chat_history = []
         st.rerun()
 
-    # 2. BOTÓN PARA NUEVO PDF CORREGIDO
-    if st.button("🔄 Cambiar / Subir Nuevo PDF", use_container_width=True):
-        st.session_state.vector_store = None
-        st.session_state.chat_history = []
-        st.session_state.inicio_documento = ""
-        st.session_state.texto_completo_pdf = ""
-        st.rerun()
+    
 
     # 3. BOTÓN PARA DESCARGAR CONVERSACIÓN CORREGIDO
     historial_texto = ""
