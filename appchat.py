@@ -19,19 +19,15 @@ else:
 
 st.set_page_config(page_title="Asistente RAG", layout="wide")
 st.title("🦙 Asistente Virtual de JGC analiza y extrae informacion de un pdf. Usa RAG para evitar alucinaciones")
+
 if GROQ_API_KEY == "api-jgc":
     st.warning("⚠️ Usando clave de ejemplo. Si estás en la nube, asegúrate de configurar GROQ_API_KEY en Advanced Settings -> Secrets.")
 
 # Inicializar modelos activos en Groq
 llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.2, groq_api_key=GROQ_API_KEY)
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-# 1. BOTÓN PARA LIMPIAR HISTORIAL
-# inicio codigo nuevo 28 agosto
-if st.button("🗑️ Limpiar Historial", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
-        #finaliza codigo nuevo 28 agosto
-# Inicializar estados de sesión
+
+# Inicializar estados de sesión (Centralizados)
 if "vector_store" not in st.session_state: st.session_state.vector_store = None
 if "chat_history" not in st.session_state: st.session_state.chat_history = []
 if "inicio_documento" not in st.session_state: st.session_state.inicio_documento = ""
@@ -42,6 +38,7 @@ def normalizar_texto(texto):
     texto_norm = unicodedata.normalize('NFD', texto)
     return "".join([c for c in texto_norm if unicodedata.category(c) != 'Mn']).lower()
 
+# --- BARRA LATERAL IZQUIERDA (CONTENEDOR ÚNICO) ---
 with st.sidebar:
     st.header("📁 Base de Conocimiento")
     uploaded_file = st.file_uploader("Sube un archivo PDF", type=["pdf"])
@@ -56,10 +53,8 @@ with st.sidebar:
                 loader = PyPDFLoader(temp_file_path)
                 docs = loader.load()
                 
-                # Guardar todo el texto del documento para búsquedas y conteos exactos
                 st.session_state.texto_completo_pdf = "\n".join([doc.page_content for doc in docs])
                 
-                # Guardar el texto de las primeras páginas para la portada
                 texto_inicial = ""
                 for i in range(min(2, len(docs))):
                     texto_inicial += docs[i].page_content + "\n"
@@ -76,6 +71,39 @@ with st.sidebar:
                 if os.path.exists(temp_file_path): 
                     os.remove(temp_file_path)
 
+    # --- SECCIÓN DE ACCIONES EN LA BARRA LATERAL ---
+    st.markdown("---") 
+    st.markdown("### 🛠️ Acciones del Asistente")
+
+    # 1. BOTÓN PARA LIMPIAR HISTORIAL CORREGIDO
+    if st.button("🗑️ Limpiar Historial", use_container_width=True):
+        st.session_state.chat_history = []
+        st.rerun()
+
+    # 2. BOTÓN PARA NUEVO PDF CORREGIDO
+    if st.button("🔄 Cambiar / Subir Nuevo PDF", use_container_width=True):
+        st.session_state.vector_store = None
+        st.session_state.chat_history = []
+        st.session_state.inicio_documento = ""
+        st.session_state.texto_completo_pdf = ""
+        st.rerun()
+
+    # 3. BOTÓN PARA DESCARGAR CONVERSACIÓN CORREGIDO
+    historial_texto = ""
+    if "chat_history" in st.session_state:
+        for m in st.session_state.chat_history:
+            role_name = "Asistente" if m['role'] == 'assistant' else "Usuario"
+            historial_texto += f"{role_name}: {m['content']}\n\n"
+
+    st.download_button(
+        label="📥 Descargar Conversación",
+        data=historial_texto,
+        file_name="historial_chat.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
+
+# --- CUERPO PRINCIPAL DEL CHAT ---
 # Mostrar el historial
 for message in st.session_state.chat_history:
     with st.chat_message(message["role"]): 
@@ -92,17 +120,14 @@ if user_query:
     else:
         with st.spinner("Buscando en la base de datos y redactando respuesta..."):
             try:
-                # DETECCIÓN DE SOLICITUD DE CONTEO
                 conteo_info = ""
                 if any(p in user_query.lower() for p in ["cuantas veces", "cuántas veces", "repite"]):
-                    # Extraer términos candidatos entre comillas o palabras clave
                     match = re.search(r'["“]([^"”]+)["”]', user_query)
                     termino_a_buscar = match.group(1) if match else user_query.replace("cuantas veces", "").replace("cuántas veces", "").replace("se repite", "").replace("en espanol o ingles", "").replace("en español o inglés", "").strip("?¿ ")
                     
                     if termino_a_buscar:
                         texto_target = normalizar_texto(st.session_state.texto_completo_pdf)
                         
-                        # Mapeo inteligente para variaciones comunes (español e inglés)
                         terminos_variaciones = [termino_a_buscar]
                         if "alfa sinucleina" in normalizar_texto(termino_a_buscar) or "alpha synuclein" in normalizar_texto(termino_a_buscar):
                             terminos_variaciones = ["alfa-sinucleina", "alfa sinucleina", "alpha-synuclein", "alpha synuclein", "a-synuclein", "a-sinucleina"]
@@ -118,12 +143,10 @@ if user_query:
                         
                         conteo_info = f"\n[SISTEMA: El análisis de código matemático detectó que los términos solicitados se repiten un total de {total_conteo} veces en todo el PDF bruto. Desglose analítico: {', '.join(detalles_conteo) if detalles_conteo else '0'}. Transmite este número exacto al usuario de forma amigable sin quejarte por el idioma]."
 
-                # Buscamos los fragmentos más parecidos
                 retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k": 4})
                 docs = retriever.invoke(user_query)
                 contexto_busqueda = "\n\n".join(d.page_content for d in docs)
                 
-                # Contexto integrado
                 contexto_completo = f"--- INICIO/PORTADA DEL DOCUMENTO ---\n{st.session_state.inicio_documento}\n\n--- FRAGMENTOS RELEVANTES ---\n{contexto_busqueda}\n\n{conteo_info}"
                 
                 prompt = ChatPromptTemplate.from_template(
@@ -143,59 +166,3 @@ if user_query:
     with st.chat_message("assistant"): 
         st.write(response_text)
     st.session_state.chat_history.append({"role": "assistant", "content": response_text})
-################### CODIGO NUEVO AGREGADO###########################
-#boton para limpiar el historial
-#if st.button("🗑️ Limpiar Historial"):
-    #st.session_state.messages = []
-    #st.rerun()
-    #boton para subir un nuevo pdf
-#if st.button("🔄 Cambiar PDF / Nueva Base de Datos"):
-    #st.session_state.vector_store = None
-    #st.session_state.messages = []
-    #st.rerun()
-    #boton para descargar el historial del chat
-# Convertimos el historial de la sesión a texto plano
-#historial_texto = ""
-#if "messages" in st.session_state:
-    #for m in st.session_state.messages:
-        #historial_texto += f"{m['role'].upper()}: {m['content']}\n\n"
-
-# Creamos el botón de descarga nativo de Streamlit
-#st.download_button(
-    #label="📥 Descargar Conversación",
-    #data=historial_texto,
-    #file_name="historial_chat.txt",
-    #mime="text/plain"
-#)
-#estructura de la barra lateral izquierda que contiene los botones
-# --- SECCIÓN DE ACCIONES EN LA BARRA LATERAL ---
-with st.sidebar:
-    st.markdown("---") # Una línea divisoria visual elegante
-    st.markdown("### 🛠️ Acciones del Asistente")
-
-    # 1. BOTÓN PARA LIMPIAR HISTORIAL
-    #if st.button("🗑️ Limpiar Historial", use_container_width=True):
-        #st.session_state.messages = []
-        #st.rerun()
-
-    # 2. BOTÓN PARA NUEVO PDF
-    if st.button("🔄 Cambiar / Subir Nuevo PDF", use_container_width=True):
-        st.session_state.vector_store = None
-        st.session_state.messages = []
-        st.rerun()
-
-    # 3. BOTÓN PARA DESCARGAR CONVERSACIÓN
-    # Primero preparamos el texto del historial para la descarga
-    historial_texto = ""
-    if "messages" in st.session_state:
-        for m in st.session_state.messages:
-            role_name = "Asistente" if m['role'] == 'assistant' else "Usuario"
-            historial_texto += f"{role_name}: {m['content']}\n\n"
-
-    st.download_button(
-        label="📥 Descargar Conversación",
-        data=historial_texto,
-        file_name="historial_chat.txt",
-        mime="text/plain",
-        use_container_width=True
-    )
