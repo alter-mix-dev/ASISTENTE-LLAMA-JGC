@@ -141,7 +141,8 @@ if user_query:
     st.session_state.chat_history.append({"role": "assistant", "content": response_text})
 ################### CODIGO NUEVO AGREGADO###########################
 #boton para limpiar el historial
-"""if st.button("🗑️ Limpiar Historial"):
+"""
+if st.button("🗑️ Limpiar Historial"):
     st.session_state.messages = []
     st.rerun()
     #boton para subir un nuevo pdf
@@ -162,7 +163,8 @@ st.download_button(
     data=historial_texto,
     file_name="historial_chat.txt",
     mime="text/plain"
-)"""
+)
+"""
 #estructura de la barra lateral izquierda que contiene los botones
 # --- SECCIÓN DE ACCIONES EN LA BARRA LATERAL ---
 with st.sidebar:
